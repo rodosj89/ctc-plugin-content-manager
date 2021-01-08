@@ -12,6 +12,7 @@ import FieldComponent from '../../FieldComponent';
 import Banner from '../Banner';
 import FormWrapper from '../FormWrapper';
 import { connect, select } from './utils';
+import TitleFormGeneral from '../../TitleFormGeneral';
 
 /* eslint-disable react/no-array-index-key */
 
@@ -190,6 +191,16 @@ const DraggedItem = ({
                       const isComponent = get(currentField, 'type', '') === 'component';
                       const keys = `${componentFieldName}.${field.name}`;
 
+                      /* titles-comentarios */
+                      if (field.name === 'tituloseccion' || field.name === 'titulogeneral') {
+                        return (
+                          <div key={field.name} style={{padding: '1em'}}>
+                            <TitleFormGeneral name={field.name} layout={schema} />
+                          </div>
+                        )
+                      }
+                      ////////////////////////
+                      
                       if (isComponent) {
                         const componentUid = currentField.component;
                         const metas = getMeta(field.name);
