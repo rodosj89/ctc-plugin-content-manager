@@ -5,7 +5,7 @@ import { useIntl } from 'react-intl';
 import PropTypes from 'prop-types';
 import { get, has, isEmpty } from 'lodash';
 import { Flex, Text } from '@buffetjs/core';
-import { getDisplayedValue, getTrad } from '../../utils';
+import { getTrad } from '../../utils';
 import RelationDPState from '../RelationDPState';
 
 const TextGrow = styled(Text)`
@@ -22,8 +22,6 @@ const Option = props => {
     : 'components.Select.publish-info-title';
   const title = formatMessage({ id: getTrad(titleLabelID) });
   const fontWeight = props.isFocused ? 'bold' : 'regular';
-  const mainField = get(props, ['selectProps', 'mainField'], {});
-  const value = getDisplayedValue(mainField.schema.type, props.label, mainField.name);
 
   if (hasDraftAndPublish) {
     return (
@@ -38,8 +36,8 @@ const Option = props => {
             title={title}
           />
 
-          <TextGrow ellipsis as="div" fontWeight={fontWeight} title={value}>
-            {value}&nbsp;
+          <TextGrow ellipsis as="div" fontWeight={fontWeight}>
+            {props.label}&nbsp;
           </TextGrow>
         </Flex>
       </Component>
@@ -48,8 +46,8 @@ const Option = props => {
 
   return (
     <Component {...props}>
-      <Text ellipsis fontWeight={fontWeight} title={value}>
-        {value}
+      <Text ellipsis fontWeight={fontWeight}>
+        {props.label}
       </Text>
     </Component>
   );
@@ -64,12 +62,6 @@ Option.propTypes = {
   isFocused: PropTypes.bool.isRequired,
   selectProps: PropTypes.shape({
     hasDraftAndPublish: PropTypes.bool,
-    mainField: PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      schema: PropTypes.shape({
-        type: PropTypes.string.isRequired,
-      }).isRequired,
-    }).isRequired,
   }).isRequired,
 };
 

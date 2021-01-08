@@ -1,24 +1,35 @@
 'use strict';
 
-const { createModelConfigurationSchema } = require('../../../controllers/validation');
 const { createDefaultSettings, syncSettings } = require('./settings');
 const { createDefaultMetadatas, syncMetadatas } = require('./metadatas');
 const { createDefaultLayouts, syncLayouts } = require('./layouts');
+const { formatContentTypeSchema } = require('../../ContentTypes');
+const {
+  createModelConfigurationSchema,
+} = require('../../../controllers/validation');
 
-async function validateCustomConfig(schema) {
+async function validateCustomConfig(model, schema) {
   try {
-    await createModelConfigurationSchema(schema, {
+    await createModelConfigurationSchema(model, schema, {
       allowUndefined: true,
-    }).validate(schema.config);
+    }).validate(model.config);
   } catch (error) {
     throw new Error(
-      `Invalid Model configuration for model ${schema.uid}. Verify your {{modelName}}.config.js(on) file:\n  - ${error.message}\n`
+      `Invalid Model configuration for model ${model.uid}. Verify your {{modelName}}.config.js(on) file:\n  - ${error.message}\n`
     );
   }
 }
 
-async function createDefaultConfiguration(schema) {
-  await validateCustomConfig(schema);
+async function createDefaultConfiguration(model) {
+  // convert model to schema
+
+  const schema = formatContentTypeSchema(model);
+  schema.primaryKey = model.primaryKey;
+
+  if (model.config) {
+    await validateCustomConfig(model, schema);
+    schema.config = model.config;
+  }
 
   return {
     settings: await createDefaultSettings(schema),
@@ -27,8 +38,15 @@ async function createDefaultConfiguration(schema) {
   };
 }
 
-async function syncConfiguration(conf, schema) {
-  await validateCustomConfig(schema);
+async function syncConfiguration(conf, model) {
+  // convert model to schema
+  const schema = formatContentTypeSchema(model);
+  schema.primaryKey = model.primaryKey;
+
+  if (model.config) {
+    await validateCustomConfig(model, schema);
+    schema.config = model.config;
+  }
 
   return {
     settings: await syncSettings(conf, schema),

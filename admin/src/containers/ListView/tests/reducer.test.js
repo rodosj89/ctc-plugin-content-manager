@@ -6,6 +6,7 @@ import {
   onChangeBulkSelectall,
   onDeleteDataSucceeded,
   onDeleteSeveralDataSucceeded,
+  resetProps,
   setModalLoadingState,
   toggleModalDelete,
   toggleModalDeleteAll,
@@ -18,6 +19,7 @@ describe('CONTENT MANAGER | CONTAINERS | ListView | reducer', () => {
 
   beforeEach(() => {
     state = {
+      count: 0,
       data: [],
       didDeleteData: false,
       entriesToDelete: [],
@@ -25,54 +27,43 @@ describe('CONTENT MANAGER | CONTAINERS | ListView | reducer', () => {
       showModalConfirmButtonLoading: false,
       showWarningDelete: false,
       showWarningDeleteAll: false,
-      contentType: {},
-      initialDisplayedHeaders: [],
-      displayedHeaders: [],
-      pagination: {
-        total: 0,
-      },
     };
   });
 
-  it('should handle the default action correctly', () => {
-    const expected = state;
-    state = {};
+  describe('DEFAULT_ACTION', () => {
+    it('should return the initialState', () => {
+      const expected = state;
 
-    expect(reducer(undefined, {})).toEqual(expected);
+      expect(reducer(undefined, {})).toEqual(expected);
+    });
   });
 
   describe('GET_DATA', () => {
-    it('should return getData action correctly', () => {
-      state.contentType = 'test';
-      state.initialDisplayedHeaders = ['test'];
-      state.displayedHeaders = ['test'];
+    it('should return the initialState', () => {
+      state.count = 1;
+      state.data = ['test'];
       state.isLoading = false;
 
       const expected = produce(state, draft => {
+        draft.count = 0;
         draft.data = [];
-        draft.didDeleteData = false;
-        draft.entriesToDelete = [];
         draft.isLoading = true;
-        draft.showModalConfirmButtonLoading = false;
-        draft.showWarningDelete = false;
-        draft.showWarningDeleteAll = false;
-        draft.contentType = 'test';
-        draft.initialDisplayedHeaders = ['test'];
-        draft.displayedHeaders = ['test'];
       });
 
       expect(reducer(state, getData())).toEqual(expected);
     });
   });
 
-  it('should handle the getDataSucceeded action correctly', () => {
-    const expected = produce(state, draft => {
-      draft.pagination = { count: 1 };
-      draft.data = ['test'];
-      draft.isLoading = false;
-    });
+  describe('GET_DATA_SUCCEEDED', () => {
+    it('should set the data correctly', () => {
+      const expected = produce(state, draft => {
+        draft.count = 1;
+        draft.data = ['test'];
+        draft.isLoading = false;
+      });
 
-    expect(reducer(state, getDataSucceeded({ count: 1 }, ['test']))).toEqual(expected);
+      expect(reducer(state, getDataSucceeded(1, ['test']))).toEqual(expected);
+    });
   });
 
   describe('ON_CHANGE_BULK', () => {
@@ -116,7 +107,17 @@ describe('CONTENT MANAGER | CONTAINERS | ListView | reducer', () => {
 
     it('should all all the elements if the entriesToDelete array is empty', () => {
       state.entriesToDelete = [];
-      state.data = [{ id: 1 }, { id: '2' }, { id: '3' }];
+      state.data = [
+        {
+          id: 1,
+        },
+        {
+          id: '2',
+        },
+        {
+          id: '3',
+        },
+      ];
 
       const expected = produce(state, draft => {
         draft.entriesToDelete = ['1', '2', '3'];
@@ -149,6 +150,22 @@ describe('CONTENT MANAGER | CONTAINERS | ListView | reducer', () => {
       });
 
       expect(reducer(state, onDeleteSeveralDataSucceeded())).toEqual(expected);
+    });
+  });
+
+  describe('RESET_PROPS', () => {
+    it('should return the initialState', () => {
+      state.count = 1;
+      state.data = ['test'];
+      state.isLoading = false;
+
+      const expected = produce(state, draft => {
+        draft.count = 0;
+        draft.data = [];
+        draft.isLoading = true;
+      });
+
+      expect(reducer(state, resetProps())).toEqual(expected);
     });
   });
 

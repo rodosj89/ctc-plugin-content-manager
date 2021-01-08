@@ -1,12 +1,14 @@
-import React, { useCallback, useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
 import { Link, useLocation } from 'react-router-dom';
-import { findIndex, get, isArray, isEmpty } from 'lodash';
+import { cloneDeep, findIndex, get, isArray, isEmpty, set } from 'lodash';
 import { request } from 'strapi-helper-plugin';
 import { Flex, Text, Padded } from '@buffetjs/core';
 import pluginId from '../../pluginId';
 import useDataManager from '../../hooks/useDataManager';
+import useEditView from '../../hooks/useEditView';
+import { getFieldName } from '../../utils';
 import NotAllowedInput from '../NotAllowedInput';
 import SelectOne from '../SelectOne';
 import SelectMany from '../SelectMany';
@@ -18,7 +20,9 @@ import { A, BaselineAlignment } from './components';
 import { connect, select, styles } from './utils';
 
 function SelectWrapper({
+  componentUid,
   description,
+  displayNavigationLink,
   editable,
   label,
   isCreatingEntry,
@@ -27,13 +31,22 @@ function SelectWrapper({
   mainField,
   name,
   relationType,
+  slug,
   targetModel,
   placeholder,
-  queryInfos,
 }) {
   // Disable the input in case of a polymorphic relation
-  const isMorph = useMemo(() => relationType.toLowerCase().includes('morph'), [relationType]);
+  const isMorph = relationType.toLowerCase().includes('morph');
   const { addRelation, modifiedData, moveRelation, onChange, onRemoveRelation } = useDataManager();
+
+  const { isDraggingComponent } = useEditView();
+
+  // This is needed for making requests when used in a component
+  const fieldName = useMemo(() => {
+    const fieldNameArray = getFieldName(name);
+
+    return fieldNameArray[fieldNameArray.length - 1];
+  }, [name]);
 
   const { pathname } = useLocation();
 
@@ -45,6 +58,10 @@ function SelectWrapper({
   });
   const [options, setOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const abortController = new AbortController();
+  const { signal } = abortController;
+  const ref = useRef();
+  const startRef = useRef();
 
   const filteredOptions = useMemo(() => {
     return options.filter(option => {
@@ -62,34 +79,37 @@ function SelectWrapper({
     });
   }, [options, value]);
 
-  const { endPoint, containsKey, defaultParams, shouldDisplayRelationLink } = queryInfos;
+  startRef.current = state._start;
 
-  const getData = useCallback(
-    async signal => {
-      // Currently polymorphic relations are not handled
-      if (isMorph) {
-        setIsLoading(false);
+  ref.current = async () => {
+    if (isMorph) {
+      setIsLoading(false);
 
-        return;
-      }
+      return;
+    }
 
-      if (!isFieldAllowed) {
-        setIsLoading(false);
-
-        return;
-      }
-
-      const params = { _limit: state._limit, _start: state._start, ...defaultParams };
-
-      if (state._contains) {
-        params[containsKey] = state._contains;
-      }
-
+    if (!isDraggingComponent) {
       try {
-        const data = await request(endPoint, { method: 'GET', params, signal });
+        const requestUrl = `/${pluginId}/explorer/${slug}/relation-list/${fieldName}`;
+
+        const containsKey = `${mainField}_contains`;
+        const { _contains, ...restState } = cloneDeep(state);
+        const params = isEmpty(state._contains)
+          ? restState
+          : { [containsKey]: _contains, ...restState };
+
+        if (componentUid) {
+          set(params, '_component', componentUid);
+        }
+
+        const data = await request(requestUrl, {
+          method: 'GET',
+          params,
+          signal,
+        });
 
         const formattedData = data.map(obj => {
-          return { value: obj, label: obj[mainField.name] };
+          return { value: obj, label: obj[mainField] };
         });
 
         setOptions(prevState =>
@@ -105,31 +125,47 @@ function SelectWrapper({
         );
         setIsLoading(false);
       } catch (err) {
-        // Silent
+        if (err.code !== 20) {
+          strapi.notification.toggle({
+            type: 'warning',
+            message: { id: 'notification.error' },
+          });
+        }
       }
-    },
-
-    [
-      containsKey,
-      defaultParams,
-      endPoint,
-      isFieldAllowed,
-      isMorph,
-      mainField.name,
-      state._limit,
-      state._start,
-      state._contains,
-    ]
-  );
+    }
+  };
 
   useEffect(() => {
-    const abortController = new AbortController();
-    const { signal } = abortController;
+    if (state._contains !== '') {
+      let timer = setTimeout(() => {
+        ref.current();
+      }, 300);
 
-    getData(signal);
+      return () => clearTimeout(timer);
+    }
 
-    return () => abortController.abort();
-  }, [getData]);
+    if (isFieldAllowed) {
+      ref.current();
+    } else {
+      setIsLoading(false);
+    }
+
+    return () => {
+      abortController.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state._contains, isFieldAllowed]);
+
+  useEffect(() => {
+    if (state._start !== 0) {
+      ref.current();
+    }
+
+    return () => {
+      abortController.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state._start]);
 
   const onInputChange = (inputValue, { action }) => {
     if (action === 'input-change') {
@@ -160,7 +196,7 @@ function SelectWrapper({
       return null;
     }
 
-    if (!shouldDisplayRelationLink) {
+    if (!displayNavigationLink) {
       return null;
     }
 
@@ -171,7 +207,7 @@ function SelectWrapper({
         </FormattedMessage>
       </Link>
     );
-  }, [shouldDisplayRelationLink, pathname, to, value]);
+  }, [displayNavigationLink, pathname, to, value]);
 
   const Component = isSingle ? SelectOne : SelectMany;
   const associationsLength = isArray(value) ? value.length : 0;
@@ -222,7 +258,7 @@ function SelectWrapper({
             addRelation({ target: { name, value } });
           }}
           components={{ ClearIndicator, DropdownIndicator, IndicatorSeparator, Option }}
-          displayNavigationLink={shouldDisplayRelationLink}
+          displayNavigationLink={displayNavigationLink}
           id={name}
           isDisabled={isDisabled}
           isLoading={isLoading}
@@ -258,6 +294,7 @@ function SelectWrapper({
 }
 
 SelectWrapper.defaultProps = {
+  componentUid: null,
   editable: true,
   description: '',
   label: '',
@@ -266,28 +303,20 @@ SelectWrapper.defaultProps = {
 };
 
 SelectWrapper.propTypes = {
+  componentUid: PropTypes.string,
+  displayNavigationLink: PropTypes.bool.isRequired,
   editable: PropTypes.bool,
   description: PropTypes.string,
   label: PropTypes.string,
   isCreatingEntry: PropTypes.bool.isRequired,
   isFieldAllowed: PropTypes.bool,
   isFieldReadable: PropTypes.bool.isRequired,
-  mainField: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    schema: PropTypes.shape({
-      type: PropTypes.string.isRequired,
-    }).isRequired,
-  }).isRequired,
+  mainField: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
   relationType: PropTypes.string.isRequired,
+  slug: PropTypes.string.isRequired,
   targetModel: PropTypes.string.isRequired,
-  queryInfos: PropTypes.exact({
-    containsKey: PropTypes.string.isRequired,
-    defaultParams: PropTypes.object,
-    endPoint: PropTypes.string.isRequired,
-    shouldDisplayRelationLink: PropTypes.bool.isRequired,
-  }).isRequired,
 };
 
 const Memoized = memo(SelectWrapper);

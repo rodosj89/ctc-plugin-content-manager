@@ -1,7 +1,4 @@
-'use strict';
-
 const fs = require('fs');
-const path = require('path');
 
 const { registerAndLogin } = require('../../../../test/helpers/auth');
 const createModelsUtils = require('../../../../test/helpers/models');
@@ -10,11 +7,10 @@ const { createAuthRequest } = require('../../../../test/helpers/request');
 let modelsUtils;
 let rq;
 let authRq;
-
 const uploadImg = () => {
   return authRq.post('/upload', {
     formData: {
-      files: fs.createReadStream(path.join(__dirname, 'rec.jpg')),
+      files: fs.createReadStream(__dirname + '/rec.jpg'),
     },
   });
 };
@@ -22,7 +18,7 @@ const uploadImg = () => {
 describe.each([
   [
     'CONTENT MANAGER',
-    '/content-manager/collection-types/application::withdynamiczonemedia.withdynamiczonemedia',
+    '/content-manager/explorer/application::withdynamiczonemedia.withdynamiczonemedia',
   ],
   ['GENERATED API', '/withdynamiczonemedias'],
 ])('[%s] => Not required dynamiczone', (_, path) => {

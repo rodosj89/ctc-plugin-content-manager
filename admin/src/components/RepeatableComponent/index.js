@@ -1,19 +1,19 @@
-import React, { memo, useCallback, useMemo, useState } from 'react';
 /* eslint-disable import/no-cycle */
+import React, { memo, useReducer } from 'react';
 import { useDrop } from 'react-dnd';
 import PropTypes from 'prop-types';
 import { get, take } from 'lodash';
 import { FormattedMessage } from 'react-intl';
 import { ErrorMessage } from '@buffetjs/styles';
 import pluginId from '../../pluginId';
-import { getMaxTempKey } from '../../utils';
-import { useContentTypeLayout } from '../../hooks';
 import ItemTypes from '../../utils/ItemTypes';
 import connect from './utils/connect';
 import select from './utils/select';
 import Button from './AddFieldButton';
 import DraggedItem from './DraggedItem';
 import EmptyComponent from './EmptyComponent';
+import init from './init';
+import reducer, { initialState } from './reducer';
 
 const RepeatableComponent = ({
   addRepeatableComponentToField,
@@ -21,23 +21,15 @@ const RepeatableComponent = ({
   componentUid,
   componentValue,
   componentValueLength,
+  fields,
   isNested,
   isReadOnly,
   max,
   min,
   name,
+  schema,
 }) => {
-  const [collapseToOpen, setCollapseToOpen] = useState('');
   const [, drop] = useDrop({ accept: ItemTypes.COMPONENT });
-  const { getComponentLayout } = useContentTypeLayout();
-  const componentLayoutData = useMemo(() => getComponentLayout(componentUid), [
-    componentUid,
-    getComponentLayout,
-  ]);
-
-  const nextTempKey = useMemo(() => {
-    return getMaxTempKey(componentValue || []) + 1;
-  }, [componentValue]);
 
   const componentErrorKeys = Object.keys(formErrors)
     .filter(errorKey => {
@@ -50,36 +42,24 @@ const RepeatableComponent = ({
         .join('.');
     });
 
-  const toggleCollapses = () => {
-    setCollapseToOpen('');
+  // We need to synchronize the collapses array with the data
+  // The key needed for react in the list will be the one from the collapses data
+  // This way we don't have to mutate the data when it is received and we can use a unique key
+  const [state, dispatch] = useReducer(reducer, initialState, () =>
+    init(initialState, componentValue)
+  );
+  const { collapses } = state.toJS();
+  const toggleCollapses = index => {
+    dispatch({
+      type: 'TOGGLE_COLLAPSE',
+      index,
+    });
   };
   const missingComponentsValue = min - componentValueLength;
   const errorsArray = componentErrorKeys.map(key => get(formErrors, [key, 'id'], ''));
 
-  const hasMinError = get(errorsArray, [0], '').includes('min');
-
-  const handleClick = useCallback(() => {
-    if (!isReadOnly) {
-      if (componentValueLength < max) {
-        const shouldCheckErrors = hasMinError;
-
-        addRepeatableComponentToField(name, componentUid, shouldCheckErrors);
-
-        setCollapseToOpen(nextTempKey);
-      } else if (componentValueLength >= max) {
-        strapi.notification.info(`${pluginId}.components.notification.info.maximum-requirement`);
-      }
-    }
-  }, [
-    addRepeatableComponentToField,
-    componentUid,
-    componentValueLength,
-    hasMinError,
-    isReadOnly,
-    max,
-    name,
-    nextTempKey,
-  ]);
+  const hasMinError =
+    get(errorsArray, [0], '').includes('min') && !collapses.some(obj => obj.isOpen === true);
 
   return (
     <div>
@@ -93,19 +73,16 @@ const RepeatableComponent = ({
       <div ref={drop}>
         {componentValueLength > 0 &&
           componentValue.map((data, index) => {
-            const key = data.__temp_key__;
-            const isOpen = collapseToOpen === key;
             const componentFieldName = `${name}.${index}`;
-            const previousComponentTempKey = get(componentValue, [index - 1, '__temp_key__']);
             const doesPreviousFieldContainErrorsAndIsOpen =
               componentErrorKeys.includes(`${name}.${index - 1}`) &&
               index !== 0 &&
-              collapseToOpen === previousComponentTempKey;
-
+              get(collapses, [index - 1, 'isOpen'], false) === false;
             const hasErrors = componentErrorKeys.includes(componentFieldName);
 
             return (
               <DraggedItem
+                fields={fields}
                 componentFieldName={componentFieldName}
                 componentUid={componentUid}
                 doesPreviousFieldContainErrorsAndIsOpen={doesPreviousFieldContainErrorsAndIsOpen}
@@ -113,17 +90,27 @@ const RepeatableComponent = ({
                 hasMinError={hasMinError}
                 isFirst={index === 0}
                 isReadOnly={isReadOnly}
-                isOpen={isOpen}
-                key={key}
+                isOpen={get(collapses, [index, 'isOpen'], false)}
+                key={get(collapses, [index, '_temp__id'], null)}
                 onClickToggle={() => {
-                  if (isOpen) {
-                    setCollapseToOpen('');
-                  } else {
-                    setCollapseToOpen(key);
-                  }
+                  // Close all other collapses and open the selected one
+                  toggleCollapses(index);
+                }}
+                removeCollapse={() => {
+                  dispatch({
+                    type: 'REMOVE_COLLAPSE',
+                    index,
+                  });
+                }}
+                moveCollapse={(dragIndex, hoverIndex) => {
+                  dispatch({
+                    type: 'MOVE_COLLAPSE',
+                    dragIndex,
+                    hoverIndex,
+                  });
                 }}
                 parentName={name}
-                schema={componentLayoutData}
+                schema={schema}
                 toggleCollapses={toggleCollapses}
               />
             );
@@ -136,10 +123,26 @@ const RepeatableComponent = ({
         doesPreviousFieldContainErrorsAndIsClosed={
           componentValueLength > 0 &&
           componentErrorKeys.includes(`${name}.${componentValueLength - 1}`) &&
-          componentValue[componentValueLength - 1].__temp_key__ !== collapseToOpen
+          collapses[componentValueLength - 1].isOpen === false
         }
         type="button"
-        onClick={handleClick}
+        onClick={() => {
+          if (!isReadOnly) {
+            if (componentValueLength < max) {
+              const shouldCheckErrors = hasMinError;
+
+              addRepeatableComponentToField(name, componentUid, shouldCheckErrors);
+              dispatch({
+                type: 'ADD_NEW_FIELD',
+              });
+            } else if (componentValueLength >= max) {
+              strapi.notification.toggle({
+                type: 'info',
+                message: { id: `${pluginId}.components.notification.info.maximum-requirement` },
+              });
+            }
+          }
+        }}
       >
         <i className="fa fa-plus" />
         <FormattedMessage id={`${pluginId}.containers.EditView.add.new`} />
@@ -161,6 +164,7 @@ const RepeatableComponent = ({
 RepeatableComponent.defaultProps = {
   componentValue: null,
   componentValueLength: 0,
+  fields: [],
   formErrors: {},
   isNested: false,
   max: Infinity,
@@ -172,12 +176,14 @@ RepeatableComponent.propTypes = {
   componentUid: PropTypes.string.isRequired,
   componentValue: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   componentValueLength: PropTypes.number,
+  fields: PropTypes.array,
   formErrors: PropTypes.object,
   isNested: PropTypes.bool,
   isReadOnly: PropTypes.bool.isRequired,
   max: PropTypes.number,
   min: PropTypes.number,
   name: PropTypes.string.isRequired,
+  schema: PropTypes.object.isRequired,
 };
 
 const Memoized = memo(RepeatableComponent);

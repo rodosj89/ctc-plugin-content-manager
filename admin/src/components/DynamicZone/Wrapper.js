@@ -3,7 +3,6 @@ import styled from 'styled-components';
 const Wrapper = styled.div`
   position: relative;
   padding-top: 5px;
-  padding-bottom: 3px;
   text-align: center;
   .info {
     position: absolute;

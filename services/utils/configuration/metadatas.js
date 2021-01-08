@@ -1,14 +1,8 @@
 'use strict';
 
 const _ = require('lodash');
-const { getService } = require('../../../utils');
-const {
-  isSortable,
-  isSearchable,
-  isVisible,
-  isRelation,
-  getDefaultMainField,
-} = require('./attributes');
+const { isSortable, isSearchable, isVisible, isRelation } = require('./attributes');
+const { formatContentTypeSchema } = require('../../ContentTypes');
 
 function createDefaultMetadatas(schema) {
   return {
@@ -27,6 +21,16 @@ function createDefaultMetadatas(schema) {
   };
 }
 
+function createDefaultMainField(schema) {
+  if (!schema) return 'id';
+
+  const mainField = Object.keys(schema.attributes).find(
+    key => schema.attributes[key].type === 'string' && !['id', schema.primaryKey].includes(key)
+  );
+
+  return mainField || 'id';
+}
+
 function createDefaultMetadata(schema, name) {
   const edit = {
     label: _.upperFirst(name),
@@ -37,13 +41,9 @@ function createDefaultMetadata(schema, name) {
   };
 
   if (isRelation(schema.attributes[name])) {
-    const { targetModel } = schema.attributes[name];
-
-    const targetSchema = getTargetSchema(targetModel);
-
-    if (targetSchema) {
-      edit.mainField = getDefaultMainField(targetSchema);
-    }
+    const { targetModel, plugin } = schema.attributes[name];
+    const targetSchema = getTargetSchema(targetModel, plugin);
+    edit.mainField = createDefaultMainField(targetSchema);
   }
 
   _.assign(
@@ -116,12 +116,12 @@ async function syncMetadatas(configuration, schema) {
     if (edit.mainField === 'id') return acc;
 
     // check the mainField in the targetModel
-    const targetSchema = getTargetSchema(attr.targetModel);
+    const targetSchema = getTargetSchema(attr.targetModel, attr.plugin);
 
     if (!targetSchema) return acc;
 
     if (!isSortable(targetSchema, edit.mainField)) {
-      _.set(updatedMeta, ['edit', 'mainField'], getDefaultMainField(targetSchema));
+      _.set(updatedMeta, ['edit', 'mainField'], createDefaultMainField(targetSchema));
       _.set(acc, [key], updatedMeta);
       return acc;
     }
@@ -132,8 +132,14 @@ async function syncMetadatas(configuration, schema) {
   return _.assign(metasWithDefaults, updatedMetas);
 }
 
-const getTargetSchema = targetModel => {
-  return getService('content-types').findContentType(targetModel);
+const getTargetSchema = (name, plugin) => {
+  const model = strapi.getModel(name, plugin);
+  if (!model) return null;
+
+  return {
+    ...formatContentTypeSchema(model),
+    primaryKey: model.primaryKey,
+  };
 };
 
 module.exports = {

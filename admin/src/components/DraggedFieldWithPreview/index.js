@@ -40,7 +40,8 @@ const DraggedFieldWithPreview = forwardRef(
     const width = isFullSize && dragStart ? 0 : '100%';
     const higherFields = ['json', 'text', 'file', 'media', 'component', 'richtext', 'dynamiczone'];
     const withLongerHeight = higherFields.includes(type) && !dragStart;
-    const getCompoInfos = uid => get(componentLayouts, [uid, 'info'], { name: '', icon: '' });
+    const getCompoInfos = uid =>
+      get(componentLayouts, [uid, 'schema', 'info'], { name: '', icon: '' });
 
     const componentData = get(componentLayouts, [componentUid], {});
     const componentLayout = get(componentData, ['layouts', 'edit'], []);
@@ -98,7 +99,7 @@ const DraggedFieldWithPreview = forwardRef(
                         {row.map(field => {
                           const fieldType = get(
                             componentData,
-                            ['attributes', field.name, 'type'],
+                            ['schema', 'attributes', field.name, 'type'],
                             ''
                           );
                           const label = get(

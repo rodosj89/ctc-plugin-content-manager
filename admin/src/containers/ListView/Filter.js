@@ -1,28 +1,22 @@
-import React, { memo, useCallback } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { get, toString } from 'lodash';
 import moment from 'moment';
 import { FilterButton } from 'strapi-helper-plugin';
-import { dateFormats, formatFiltersToQuery } from '../../utils';
+import dateFormats from '../../utils/dateFormats';
 
 function Filter({
-  contentType,
-  filterName,
+  changeParams,
+  filter,
   filters,
   index,
-  metadatas,
   name,
+  schema,
   value,
   toggleFilterPickerState,
   isFilterPickerOpen,
-  setQuery,
 }) {
-  const attributeType = get(contentType, ['attributes', name, 'type'], 'string');
-  let type = attributeType;
-
-  if (attributeType === 'relation') {
-    type = get(contentType, ['metadatas', name, 'list', 'mainField', 'schema', 'type'], 'string');
-  }
+  const type = get(schema, ['attributes', name, 'type'], 'string');
   let displayedValue = toString(value);
 
   if (type.includes('date') || type.includes('timestamp')) {
@@ -41,25 +35,27 @@ function Filter({
       .utc()
       .format(format);
   }
-  const displayedName = name.split('.')[0];
 
   const label = {
-    name: displayedName,
-    filter: filterName,
+    name,
+    filter,
     value: displayedValue,
   };
 
-  const handleClick = useCallback(() => {
-    const updatedFilters = filters.slice().filter((_, i) => i !== index);
+  return (
+    <FilterButton
+      onClick={() => {
+        const updatedFilters = filters.slice().filter((_, i) => i !== index);
 
-    if (isFilterPickerOpen) {
-      toggleFilterPickerState();
-    }
-
-    setQuery({ page: 1, ...formatFiltersToQuery(updatedFilters, metadatas) });
-  }, [filters, index, isFilterPickerOpen, metadatas, setQuery, toggleFilterPickerState]);
-
-  return <FilterButton onClick={handleClick} label={label} type={type} />;
+        if (isFilterPickerOpen) {
+          toggleFilterPickerState();
+        }
+        changeParams({ target: { name: 'filters', value: updatedFilters } });
+      }}
+      label={label}
+      type={type}
+    />
+  );
 }
 
 Filter.defaultProps = {
@@ -68,16 +64,15 @@ Filter.defaultProps = {
 };
 
 Filter.propTypes = {
-  contentType: PropTypes.shape({ attributes: PropTypes.object.isRequired }).isRequired,
-  filterName: PropTypes.string.isRequired,
+  changeParams: PropTypes.func.isRequired,
+  filter: PropTypes.string.isRequired,
   filters: PropTypes.array.isRequired,
   index: PropTypes.number.isRequired,
   isFilterPickerOpen: PropTypes.bool.isRequired,
-  metadatas: PropTypes.object.isRequired,
   name: PropTypes.string,
-  setQuery: PropTypes.func.isRequired,
+  schema: PropTypes.object.isRequired,
   toggleFilterPickerState: PropTypes.func.isRequired,
   value: PropTypes.any,
 };
 
-export default memo(Filter);
+export default Filter;

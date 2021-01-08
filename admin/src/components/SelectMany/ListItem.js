@@ -89,12 +89,7 @@ ListItem.propTypes = {
   displayNavigationLink: PropTypes.bool.isRequired,
   findRelation: PropTypes.func,
   isDisabled: PropTypes.bool.isRequired,
-  mainField: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    schema: PropTypes.shape({
-      type: PropTypes.string.isRequired,
-    }).isRequired,
-  }).isRequired,
+  mainField: PropTypes.string.isRequired,
   moveRelation: PropTypes.func,
   onRemove: PropTypes.func,
   targetModel: PropTypes.string,

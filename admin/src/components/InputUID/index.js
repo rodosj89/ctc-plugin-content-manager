@@ -5,11 +5,10 @@ import { ErrorMessage, Description } from '@buffetjs/styles';
 import { Label, Error } from '@buffetjs/core';
 import { useDebounce, useClickAwayListener } from '@buffetjs/hooks';
 import styled from 'styled-components';
-import { request, LoadingIndicator, useGlobalContext } from 'strapi-helper-plugin';
+import { request, LoadingIndicator } from 'strapi-helper-plugin';
 import { FormattedMessage } from 'react-intl';
 import { get } from 'lodash';
 
-import getTrad from '../../utils/getTrad';
 import pluginId from '../../pluginId';
 import getRequestUrl from '../../utils/getRequestUrl';
 import useDataManager from '../../hooks/useDataManager';
@@ -21,7 +20,6 @@ import Input from './InputUID';
 import Wrapper from './Wrapper';
 import SubLabel from './SubLabel';
 import UID_REGEX from './regex';
-import RightContentLabel from './RightContentLabel';
 
 const InputContainer = styled.div`
   position: relative;
@@ -60,13 +58,12 @@ const InputUID = ({
   const wrapperRef = useRef(null);
   const generateUid = useRef();
   const initialValue = initialData[name];
-  const createdAtName = get(layout, ['options', 'timestamps', 0]);
+  const createdAtName = get(layout, ['schema', 'options', 'timestamps', 0]);
   const isCreation = !initialData[createdAtName];
-  const { formatMessage } = useGlobalContext();
 
   generateUid.current = async (shouldSetInitialValue = false) => {
     setIsLoading(true);
-    const requestURL = getRequestUrl('uid/generate');
+    const requestURL = getRequestUrl('explorer/uid/generate');
     try {
       const { data } = await request(requestURL, {
         method: 'POST',
@@ -87,20 +84,14 @@ const InputUID = ({
 
   const checkAvailability = async () => {
     setIsLoading(true);
-
-    const requestURL = getRequestUrl('uid/check-availability');
-
-    if (!value) {
-      return;
-    }
-
+    const requestURL = getRequestUrl('explorer/uid/check-availability');
     try {
       const data = await request(requestURL, {
         method: 'POST',
         body: {
           contentTypeUID,
           field: name,
-          value: value ? value.trim() : '',
+          value: value ? value.trim() : null,
         },
       });
       setAvailability(data);
@@ -115,13 +106,12 @@ const InputUID = ({
     }
   };
 
-  // FIXME: we need to find a better way to autofill the input when it is required.
-  // useEffect(() => {
-  //   if (!value && validations.required) {
-  //     generateUid.current(true);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
+  useEffect(() => {
+    if (!value && validations.required) {
+      generateUid.current(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (
@@ -233,18 +223,7 @@ const InputUID = ({
                 value={value || ''}
               />
               <RightContent>
-                {label && (
-                  <RightContentLabel color="blue">
-                    {formatMessage({
-                      id: getTrad('components.uid.regenerate'),
-                    })}
-                  </RightContentLabel>
-                )}
-                {!isLoading && !label && availability && (
-                  <RightLabel
-                    isAvailable={availability.isAvailable || value === availability.suggestion}
-                  />
-                )}
+                <RightLabel availability={availability} label={label} />
                 {editable && (
                   <RegenerateButton
                     onMouseEnter={handleGenerateMouseEnter}

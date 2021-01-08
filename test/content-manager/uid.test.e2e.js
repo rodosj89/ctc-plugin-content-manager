@@ -1,5 +1,3 @@
-'use strict';
-
 // Helpers.
 const { registerAndLogin } = require('../../../../test/helpers/auth');
 const createModelsUtils = require('../../../../test/helpers/models');
@@ -39,7 +37,7 @@ describe('Content Manager single types', () => {
   describe('Generate UID', () => {
     test('Throws if input is not provided', async () => {
       const res = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {},
       });
@@ -59,7 +57,7 @@ describe('Content Manager single types', () => {
 
     test('Throws when contentType is not found', async () => {
       const res = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: 'non-existent',
@@ -79,7 +77,7 @@ describe('Content Manager single types', () => {
 
     test('Throws when field is not a uid field', async () => {
       const res = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -99,9 +97,9 @@ describe('Content Manager single types', () => {
       });
     });
 
-    test('Generates a unique field when targetField is empty', async () => {
+    test('Generates a unique field when not targetField', async () => {
       const res = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -114,7 +112,7 @@ describe('Content Manager single types', () => {
       expect(res.body.data).toBe('uid-model');
 
       await rq({
-        url: `/content-manager/collection-types/${uid}`,
+        url: `/content-manager/explorer/${uid}`,
         method: 'POST',
         body: {
           slug: res.body.data,
@@ -122,7 +120,7 @@ describe('Content Manager single types', () => {
       });
 
       const secondRes = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -137,7 +135,7 @@ describe('Content Manager single types', () => {
 
     test('Generates a unique field based on targetField', async () => {
       const res = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -152,7 +150,7 @@ describe('Content Manager single types', () => {
       expect(res.body.data).toBe('this-is-a-super-title');
 
       await rq({
-        url: `/content-manager/collection-types/${uid}`,
+        url: `/content-manager/explorer/${uid}`,
         method: 'POST',
         body: {
           slug: res.body.data,
@@ -160,7 +158,7 @@ describe('Content Manager single types', () => {
       });
 
       const secondRes = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -177,7 +175,7 @@ describe('Content Manager single types', () => {
 
     test('Avoids collisions with already generated uids', async () => {
       const res = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -192,7 +190,7 @@ describe('Content Manager single types', () => {
       expect(res.body.data).toBe('my-title');
 
       await rq({
-        url: `/content-manager/collection-types/${uid}`,
+        url: `/content-manager/explorer/${uid}`,
         method: 'POST',
         body: {
           slug: res.body.data,
@@ -200,7 +198,7 @@ describe('Content Manager single types', () => {
       });
 
       const secondRes = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -215,7 +213,7 @@ describe('Content Manager single types', () => {
       expect(secondRes.body.data).toBe('my-title-1');
 
       await rq({
-        url: `/content-manager/collection-types/${uid}`,
+        url: `/content-manager/explorer/${uid}`,
         method: 'POST',
         body: {
           slug: secondRes.body.data,
@@ -223,7 +221,7 @@ describe('Content Manager single types', () => {
       });
 
       const thridRes = await rq({
-        url: `/content-manager/uid/generate`,
+        url: `/content-manager/explorer/uid/generate`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -242,7 +240,7 @@ describe('Content Manager single types', () => {
   describe('Check UID availability', () => {
     test('Throws if input is not provided', async () => {
       const res = await rq({
-        url: `/content-manager/uid/check-availability`,
+        url: `/content-manager/explorer/uid/check-availability`,
         method: 'POST',
         body: {},
       });
@@ -262,7 +260,7 @@ describe('Content Manager single types', () => {
 
     test('Throws on invalid uid value', async () => {
       const res = await rq({
-        url: `/content-manager/uid/check-availability`,
+        url: `/content-manager/explorer/uid/check-availability`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -281,7 +279,7 @@ describe('Content Manager single types', () => {
 
     test('Throws when contentType is not found', async () => {
       const res = await rq({
-        url: `/content-manager/uid/check-availability`,
+        url: `/content-manager/explorer/uid/check-availability`,
         method: 'POST',
         body: {
           contentTypeUID: 'non-existent',
@@ -301,7 +299,7 @@ describe('Content Manager single types', () => {
 
     test('Throws when field is not a uid field', async () => {
       const res = await rq({
-        url: `/content-manager/uid/check-availability`,
+        url: `/content-manager/explorer/uid/check-availability`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -323,7 +321,7 @@ describe('Content Manager single types', () => {
 
     test('Checks availability', async () => {
       const res = await rq({
-        url: `/content-manager/uid/check-availability`,
+        url: `/content-manager/explorer/uid/check-availability`,
         method: 'POST',
         body: {
           contentTypeUID: uid,
@@ -342,7 +340,7 @@ describe('Content Manager single types', () => {
     test('Gives a suggestion when not available', async () => {
       // create data
       await rq({
-        url: `/content-manager/collection-types/${uid}`,
+        url: `/content-manager/explorer/${uid}`,
         method: 'POST',
         body: {
           slug: 'custom-slug',
@@ -350,7 +348,7 @@ describe('Content Manager single types', () => {
       });
 
       const res = await rq({
-        url: `/content-manager/uid/check-availability`,
+        url: `/content-manager/explorer/uid/check-availability`,
         method: 'POST',
         body: {
           contentTypeUID: uid,

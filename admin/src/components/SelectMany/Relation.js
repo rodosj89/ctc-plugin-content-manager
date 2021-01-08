@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router-dom';
 import { isEmpty } from 'lodash';
 import { useIntl } from 'react-intl';
-import { getDisplayedValue, getTrad } from '../../utils';
+import { getTrad } from '../../utils';
 import IconRemove from '../../assets/images/icon_remove.svg';
 import RelationDPState from '../RelationDPState';
 import { Span } from './components';
@@ -42,9 +42,6 @@ const Relation = ({
     ? formatMessage({ id: getTrad(titleLabelID) })
     : formatMessage({ id: getTrad('containers.Edit.clickToJump') });
 
-  const value = data[mainField.name];
-  const formattedValue = getDisplayedValue(mainField.schema.type, value, mainField.name);
-
   if (isDragging || !displayNavigationLink) {
     title = '';
   }
@@ -62,10 +59,10 @@ const Relation = ({
         )}
         {displayNavigationLink ? (
           <Link to={{ pathname: to, state: { from: pathname } }} title={title}>
-            <Span>{formattedValue}&nbsp;</Span>
+            <Span>{data[mainField]}&nbsp;</Span>
           </Link>
         ) : (
-          <Span>{formattedValue}&nbsp;</Span>
+          <Span>{data[mainField]}&nbsp;</Span>
         )}
       </div>
       <div style={{ cursor }}>
@@ -87,12 +84,7 @@ Relation.propTypes = {
   hasDraftAndPublish: PropTypes.bool.isRequired,
   isDisabled: PropTypes.bool.isRequired,
   isDragging: PropTypes.bool,
-  mainField: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    schema: PropTypes.shape({
-      type: PropTypes.string.isRequired,
-    }).isRequired,
-  }).isRequired,
+  mainField: PropTypes.string.isRequired,
   onRemove: PropTypes.func,
   to: PropTypes.string,
 };

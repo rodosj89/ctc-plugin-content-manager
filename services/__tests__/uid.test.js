@@ -1,5 +1,3 @@
-'use strict';
-
 const uidService = require('../uid');
 
 describe('Test uid service', () => {

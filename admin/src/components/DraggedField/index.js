@@ -139,7 +139,9 @@ const DraggedField = forwardRef(
                   onClick={e => {
                     e.stopPropagation();
 
-                    goTo(`/plugins/${pluginId}/components/${componentUid}/configurations/edit`);
+                    goTo(
+                      `/plugins/${pluginId}/ctm-configurations/edit-settings/components/${componentUid}/`
+                    );
                   }}
                 >
                   <FontAwesomeIcon icon="cog" />

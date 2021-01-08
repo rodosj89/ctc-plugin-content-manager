@@ -1,5 +1,3 @@
-'use strict';
-
 const _ = require('lodash');
 
 const { registerAndLogin } = require('../../../../test/helpers/auth');
@@ -59,12 +57,10 @@ describe('Core API - Basic + dz', () => {
 
   afterAll(async () => {
     // clean database
+    const queryString = data.productsWithDz.map((p, i) => `${i}=${p.id}`).join('&');
     await rq({
-      method: 'POST',
-      url: `/content-manager/collection-types/application::product-with-dz.product-with-dz/actions/bulkDelete`,
-      body: {
-        ids: data.productsWithDz.map(({ id }) => id),
-      },
+      method: 'DELETE',
+      url: `/content-manager/explorer/deleteAll/application::product-with-dz.product-with-dz?${queryString}`,
     });
 
     await modelsUtils.deleteComponent('default.compo');
@@ -85,7 +81,7 @@ describe('Core API - Basic + dz', () => {
     };
     const res = await rq({
       method: 'POST',
-      url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+      url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
       body: product,
     });
 
@@ -98,14 +94,14 @@ describe('Core API - Basic + dz', () => {
   test('Read product with compo', async () => {
     const res = await rq({
       method: 'GET',
-      url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+      url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
     });
 
     expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body.results)).toBe(true);
-    expect(res.body.results).toHaveLength(1);
-    expect(res.body.results[0]).toMatchObject(data.productsWithDz[0]);
-    res.body.results.forEach(p => expect(p.published_at).toBeUndefined());
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject(data.productsWithDz[0]);
+    res.body.forEach(p => expect(p.published_at).toBeUndefined());
   });
 
   test('Update product with compo', async () => {
@@ -122,7 +118,7 @@ describe('Core API - Basic + dz', () => {
     };
     const res = await rq({
       method: 'PUT',
-      url: `/content-manager/collection-types/application::product-with-dz.product-with-dz/${data.productsWithDz[0].id}`,
+      url: `/content-manager/explorer/application::product-with-dz.product-with-dz/${data.productsWithDz[0].id}`,
       body: product,
     });
 
@@ -136,7 +132,7 @@ describe('Core API - Basic + dz', () => {
   test('Delete product with compo', async () => {
     const res = await rq({
       method: 'DELETE',
-      url: `/content-manager/collection-types/application::product-with-dz.product-with-dz/${data.productsWithDz[0].id}`,
+      url: `/content-manager/explorer/application::product-with-dz.product-with-dz/${data.productsWithDz[0].id}`,
     });
 
     expect(res.statusCode).toBe(200);
@@ -154,7 +150,7 @@ describe('Core API - Basic + dz', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+        url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
         body: product,
       });
 
@@ -176,7 +172,7 @@ describe('Core API - Basic + dz', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+        url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
         body: product,
       });
 
@@ -200,7 +196,7 @@ describe('Core API - Basic + dz', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+        url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
         body: product,
       });
 
@@ -223,12 +219,12 @@ describe('Core API - Basic + dz', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+        url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
         body: product,
       });
 
       expect(res.statusCode).toBe(400);
-      expect(_.get(res.body.data, ['errors', 'dz[0].name', '0'])).toBe(
+      expect(_.get(res.body.data, ['0', 'errors', 'dz[0].name', '0'])).toBe(
         'dz[0].name must be defined.'
       );
     });
@@ -246,7 +242,7 @@ describe('Core API - Basic + dz', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dz.product-with-dz',
+        url: '/content-manager/explorer/application::product-with-dz.product-with-dz',
         body: product,
       });
 

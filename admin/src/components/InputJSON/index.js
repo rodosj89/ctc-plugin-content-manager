@@ -15,7 +15,7 @@ import 'codemirror/addon/selection/mark-selection';
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/solarized.css';
 
-import { trimStart } from 'lodash';
+import { isEmpty, trimStart } from 'lodash';
 import jsonlint from './jsonlint';
 import Wrapper from './components';
 
@@ -29,7 +29,7 @@ class InputJSON extends React.Component {
   constructor(props) {
     super(props);
     this.editor = React.createRef();
-    this.state = { error: false, markedText: null, hasInitValue: false };
+    this.state = { error: false, markedText: null };
   }
 
   componentDidMount() {
@@ -54,7 +54,7 @@ class InputJSON extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.value !== this.props.value && !this.state.hasInitValue) {
+    if (isEmpty(prevProps.value) && !isEmpty(this.props.value) && !this.state.hasInitValue) {
       this.setInitValue();
     }
   }
@@ -63,9 +63,9 @@ class InputJSON extends React.Component {
     const { value } = this.props;
 
     try {
-      if (value === null) return this.codeMirror.setValue('');
-
       this.setState({ hasInitValue: true });
+
+      if (value === null) return this.codeMirror.setValue('');
 
       return this.codeMirror.setValue(stringify(value, null, 2));
     } catch (err) {
@@ -114,15 +114,17 @@ class InputJSON extends React.Component {
     }
   };
 
-  handleChange = (doc, change) => {
-    if (change.origin === 'setValue') {
+  handleChange = () => {
+    const { hasInitValue } = this.state;
+    const { name, onChange } = this.props;
+    let value = this.codeMirror.getValue();
+
+    if (!hasInitValue) {
+      this.setState({ hasInitValue: true });
+
+      // Fix for the input firing on onChange event on mount
       return;
     }
-
-    this.setState({ hasInitValue: true });
-
-    const { name, onChange } = this.props;
-    let value = doc.getValue();
 
     if (value === '') {
       value = null;
@@ -144,7 +146,7 @@ class InputJSON extends React.Component {
     }
 
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.testJSON(doc.getValue()), WAIT);
+    this.timer = setTimeout(() => this.testJSON(this.codeMirror.getValue()), WAIT);
   };
 
   testJSON = value => {

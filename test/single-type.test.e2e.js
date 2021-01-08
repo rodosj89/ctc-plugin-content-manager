@@ -1,5 +1,3 @@
-'use strict';
-
 // Helpers.
 const { registerAndLogin } = require('../../../test/helpers/auth');
 const createModelsUtils = require('../../../test/helpers/models');
@@ -39,9 +37,7 @@ describe('Content Manager single types', () => {
     expect(res.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          info: expect.objectContaining({
-            label: 'Single-type-model',
-          }),
+          label: 'Single-type-model',
         }),
       ])
     );
@@ -49,7 +45,7 @@ describe('Content Manager single types', () => {
 
   test('find single type content returns 404 when not created', async () => {
     const res = await rq({
-      url: `/content-manager/single-types/${uid}`,
+      url: `/content-manager/explorer/${uid}`,
       method: 'GET',
     });
 
@@ -58,8 +54,8 @@ describe('Content Manager single types', () => {
 
   test('Create content', async () => {
     const res = await rq({
-      url: `/content-manager/single-types/${uid}`,
-      method: 'PUT',
+      url: `/content-manager/explorer/${uid}`,
+      method: 'POST',
       body: {
         title: 'Title',
       },
@@ -74,7 +70,7 @@ describe('Content Manager single types', () => {
 
   test('find single type content returns an object ', async () => {
     const res = await rq({
-      url: `/content-manager/single-types/${uid}`,
+      url: `/content-manager/explorer/${uid}`,
       method: 'GET',
     });
 

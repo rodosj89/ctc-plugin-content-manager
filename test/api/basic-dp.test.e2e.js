@@ -1,5 +1,3 @@
-'use strict';
-
 const _ = require('lodash');
 
 const { registerAndLogin } = require('../../../../test/helpers/auth');
@@ -58,12 +56,10 @@ describe('CM API - Basic + draftAndPublish', () => {
 
   afterAll(async () => {
     // clean database
+    const queryString = data.productsWithDP.map((p, i) => `${i}=${p.id}`).join('&');
     await rq({
-      method: 'POST',
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/actions/bulkDelete`,
-      body: {
-        ids: data.productsWithDP.map(({ id }) => id),
-      },
+      method: 'DELETE',
+      url: `/content-manager/explorer/deleteAll/application::product-with-dp.product-with-dp?${queryString}`,
     });
 
     await modelsUtils.deleteContentTypes(['product-with-dp']);
@@ -77,7 +73,7 @@ describe('CM API - Basic + draftAndPublish', () => {
     };
     const res = await rq({
       method: 'POST',
-      url: '/content-manager/collection-types/application::product-with-dp.product-with-dp',
+      url: '/content-manager/explorer/application::product-with-dp.product-with-dp',
       body: product,
     });
 
@@ -95,7 +91,7 @@ describe('CM API - Basic + draftAndPublish', () => {
     };
     const res = await rq({
       method: 'POST',
-      url: '/content-manager/collection-types/application::product-with-dp.product-with-dp',
+      url: '/content-manager/explorer/application::product-with-dp.product-with-dp',
       body: product,
     });
 
@@ -108,13 +104,13 @@ describe('CM API - Basic + draftAndPublish', () => {
   test('Read all products', async () => {
     const res = await rq({
       method: 'GET',
-      url: '/content-manager/collection-types/application::product-with-dp.product-with-dp',
+      url: '/content-manager/explorer/application::product-with-dp.product-with-dp',
     });
 
     expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body.results)).toBe(true);
-    expect(res.body.results).toHaveLength(2);
-    expect(res.body.results).toEqual(
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(2);
+    expect(res.body).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           name: 'Product 1',
@@ -122,7 +118,7 @@ describe('CM API - Basic + draftAndPublish', () => {
         }),
       ])
     );
-    res.body.results.forEach(p => {
+    res.body.forEach(p => {
       expect(p.published_at).toBeNull();
     });
   });
@@ -134,7 +130,7 @@ describe('CM API - Basic + draftAndPublish', () => {
     };
     const res = await rq({
       method: 'PUT',
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${data.productsWithDP[0].id}`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/${data.productsWithDP[0].id}`,
       body: product,
     });
 
@@ -153,7 +149,7 @@ describe('CM API - Basic + draftAndPublish', () => {
     };
     const res = await rq({
       method: 'PUT',
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${data.productsWithDP[0].id}`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/${data.productsWithDP[0].id}`,
       body: product,
     });
 
@@ -168,7 +164,7 @@ describe('CM API - Basic + draftAndPublish', () => {
     const entry = data.productsWithDP[0];
 
     let { body } = await rq({
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${entry.id}/actions/publish`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/publish/${entry.id}`,
       method: 'POST',
     });
 
@@ -181,19 +177,19 @@ describe('CM API - Basic + draftAndPublish', () => {
     const entry = data.productsWithDP[0];
 
     let { body } = await rq({
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${entry.id}/actions/publish`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/publish/${entry.id}`,
       method: 'POST',
     });
 
     expect(body.statusCode).toBe(400);
-    expect(body.message).toBe('already.published');
+    expect(body.message).toBe('Already published');
   });
 
   test('Unpublish article1, expect article1 to be set to null', async () => {
     const entry = data.productsWithDP[0];
 
     let { body } = await rq({
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${entry.id}/actions/unpublish`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/unpublish/${entry.id}`,
       method: 'POST',
     });
 
@@ -206,18 +202,18 @@ describe('CM API - Basic + draftAndPublish', () => {
     const entry = data.productsWithDP[0];
 
     let { body } = await rq({
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${entry.id}/actions/unpublish`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/unpublish/${entry.id}`,
       method: 'POST',
     });
 
     expect(body.statusCode).toBe(400);
-    expect(body.message).toBe('already.draft');
+    expect(body.message).toBe('Already a draft');
   });
 
   test('Delete a draft', async () => {
     const res = await rq({
       method: 'DELETE',
-      url: `/content-manager/collection-types/application::product-with-dp.product-with-dp/${data.productsWithDP[0].id}`,
+      url: `/content-manager/explorer/application::product-with-dp.product-with-dp/${data.productsWithDP[0].id}`,
     });
 
     expect(res.statusCode).toBe(200);
@@ -235,7 +231,7 @@ describe('CM API - Basic + draftAndPublish', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dp.product-with-dp',
+        url: '/content-manager/explorer/application::product-with-dp.product-with-dp',
         body: product,
       });
 
@@ -250,7 +246,7 @@ describe('CM API - Basic + draftAndPublish', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dp.product-with-dp',
+        url: '/content-manager/explorer/application::product-with-dp.product-with-dp',
         body: product,
       });
 
@@ -269,7 +265,7 @@ describe('CM API - Basic + draftAndPublish', () => {
       };
       const res = await rq({
         method: 'POST',
-        url: '/content-manager/collection-types/application::product-with-dp.product-with-dp',
+        url: '/content-manager/explorer/application::product-with-dp.product-with-dp',
         body: product,
       });
 

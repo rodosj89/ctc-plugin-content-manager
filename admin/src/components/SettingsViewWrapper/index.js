@@ -36,7 +36,7 @@ const SettingsViewWrapper = ({
   const [showWarningSubmit, setWarningSubmit] = useState(false);
 
   const attributes = useMemo(() => {
-    return get(modifiedData, ['attributes'], {});
+    return get(modifiedData, ['schema', 'attributes'], {});
   }, [modifiedData]);
 
   const toggleWarningCancel = () => setWarningCancel(prevState => !prevState);
@@ -94,11 +94,12 @@ const SettingsViewWrapper = ({
     if (input.name === 'settings.defaultSortBy') {
       return [
         'id',
-        ...displayedFields.filter(name => {
-          const type = get(attributes, [name, 'type']);
-
-          return !['media', 'richtext', 'dynamiczone', 'relation'].includes(type) && name !== 'id';
-        }),
+        ...displayedFields.filter(
+          name =>
+            get(attributes, [name, 'type'], '') !== 'media' &&
+            name !== 'id' &&
+            get(attributes, [name, 'type'], '') !== 'richtext'
+        ),
       ];
     }
 
@@ -108,7 +109,6 @@ const SettingsViewWrapper = ({
 
         return (
           ![
-            'dynamiczone',
             'json',
             'text',
             'relation',
@@ -117,7 +117,6 @@ const SettingsViewWrapper = ({
             'date',
             'media',
             'richtext',
-            'timestamp',
           ].includes(type) && !!type
         );
       });

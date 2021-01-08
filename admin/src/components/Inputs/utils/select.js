@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { get } from 'lodash';
 import useDataManager from '../../../hooks/useDataManager';
+import useEditView from '../../../hooks/useEditView';
 
 function useSelect(keys) {
   const {
@@ -13,6 +14,7 @@ function useSelect(keys) {
     shouldNotRunValidations,
     updateActionAllowedFields,
   } = useDataManager();
+  const { layout: currentContentTypeLayout } = useEditView();
 
   const allowedFields = useMemo(() => {
     return isCreatingEntry ? createActionAllowedFields : updateActionAllowedFields;
@@ -26,6 +28,7 @@ function useSelect(keys) {
 
   return {
     allowedFields,
+    currentContentTypeLayout,
     formErrors,
     isCreatingEntry,
     onChange,

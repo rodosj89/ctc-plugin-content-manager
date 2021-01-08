@@ -1,4 +1,5 @@
 import useDataManager from '../../../../hooks/useDataManager';
+import useEditView from '../../../../hooks/useEditView';
 
 function useSelect() {
   const {
@@ -13,8 +14,14 @@ function useSelect() {
     onPublish,
     onUnpublish,
   } = useDataManager();
+  const {
+    allowedActions: { canUpdate, canCreate, canPublish },
+  } = useEditView();
 
   return {
+    canUpdate,
+    canCreate,
+    canPublish,
     componentLayouts: allLayoutData.components,
     initialData,
     isCreatingEntry,

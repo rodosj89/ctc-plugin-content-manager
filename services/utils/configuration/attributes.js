@@ -2,21 +2,11 @@
 
 const _ = require('lodash');
 const { contentTypes: contentTypesUtils } = require('strapi-utils');
-
 const { PUBLISHED_AT_ATTRIBUTE } = contentTypesUtils.constants;
 
 const NON_SORTABLES = ['component', 'json', 'relation', 'media', 'richtext', 'dynamiczone'];
-const SORTABLE_RELATIONS = ['oneWay', 'oneToOne', 'manyToOne'];
 
-const NON_LISTABLES = ['component', 'json', 'password', 'richtext', 'dynamiczone'];
-const LISTABLE_RELATIONS = [
-  'oneWay',
-  'oneToOne',
-  'oneToMany',
-  'manyToOne',
-  'manyToMany',
-  'manyWay',
-];
+const NON_LISTABLES = ['component', 'json', 'relation', 'password', 'richtext', 'dynamiczone'];
 
 // hidden fields are fields that are configured to be hidden from list, and edit views
 const isHidden = (schema, name) => {
@@ -46,10 +36,6 @@ const isListable = (schema, name) => {
     return false;
   }
 
-  if (isRelation(attribute) && !LISTABLE_RELATIONS.includes(attribute.relationType)) {
-    return false;
-  }
-
   return true;
 };
 
@@ -62,10 +48,6 @@ const isSortable = (schema, name) => {
 
   const attribute = schema.attributes[name];
   if (NON_SORTABLES.includes(attribute.type)) {
-    return false;
-  }
-
-  if (isRelation(attribute) && !SORTABLE_RELATIONS.includes(attribute.relationType)) {
     return false;
   }
 
@@ -154,15 +136,6 @@ const hasEditableAttribute = (schema, name) => {
   return true;
 };
 
-const findFirstStringAttribute = schema => {
-  return Object.keys(schema.attributes || {}).find(key => {
-    const { type } = schema.attributes[key];
-    return type === 'string' && key !== 'id';
-  });
-};
-
-const getDefaultMainField = schema => findFirstStringAttribute(schema) || 'id';
-
 module.exports = {
   isSortable,
   isVisible,
@@ -171,5 +144,4 @@ module.exports = {
   isListable,
   hasEditableAttribute,
   hasRelationAttribute,
-  getDefaultMainField,
 };

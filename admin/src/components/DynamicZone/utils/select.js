@@ -8,6 +8,7 @@ function useSelect(name) {
     createActionAllowedFields,
     isCreatingEntry,
     formErrors,
+    layout,
     modifiedData,
     moveComponentUp,
     moveComponentDown,
@@ -36,6 +37,7 @@ function useSelect(name) {
   return {
     addComponentToDynamicZone,
     formErrors,
+    layout,
     isCreatingEntry,
     isFieldAllowed,
     isFieldReadable,
